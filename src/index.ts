@@ -1,431 +1,537 @@
 import * as centra from "centra";
-import { JSDOM } from "jsdom";
-
-import { API, ENDPOINT_PATH, NODES } from "./consts";
-import { buildInfo, findTag, parseBody } from "./utils";
-
-import { CallbackEndpoint, FunctionEndpoint, Intents, RawIntents, Target } from "./enums";
-
-export declare namespace Node {
-    interface Info {
-        name: string;
-        stats: Stats[];
-    }
-
-    interface Stats {
-        nodeId: string;
-        /**
-         * The stats presented as a text line.
-         */
-        text: string;
-        /**
-         * The stats presented as an object.
-         */
-        rawStats: RawStats;
-    }
-
-    interface RawStats {
-        botCount: string;
-        ping: string;
-        status: string;
-    }
-}
+import { Api, EndpointPath } from "./consts";
+import { Intents, RawIntents } from "./enums";
+import { HumanizeIntents } from "./utils";
 
 export declare namespace Function {
-    interface Info {
-        /**
-         * The tag of the function
-         */
-        tag: string;
-        /**
-         * The description of the function
-         */
-        description: string;
-        /**
-         * The arguments of the function
-         */
-        args: Arguments[] | null;
-        /**
-         * The intents of the function
-         */
-        intents: Intents;
-        /**
-         * Whether the function requires premium hosting time
-         */
-        premium: boolean;
-    }
+	interface Info {
+		/**
+		 * The tag of the function
+		 */
+		tag: string;
+		/**
+		 * The description of the function
+		 */
+		description: string;
+		/**
+		 * The arguments of the function
+		 */
+		args: Argument[] | null;
+		/**
+		 * The intents of the function
+		 */
+		intents: Intents;
+		/**
+		 * Whether the function requires premium hosting time
+		 */
+		premium: boolean;
+	}
 
-    interface Response {
-        /**
-         * The tag of the function
-         */
-        tag: string;
-        /**
-         * The description of the function
-         */
-        shortDescription: string;
-        /**
-         * The description of the function?
-         * 
-         * *It was never used*
-         */
-        longDescription: string;
-        /**
-         * The arguments of the function
-         */
-        arguments: Arguments[] | null;
-        /**
-         * The intents of the function
-         * 
-         * 0 = None
-         * 
-         * 2 = Members
-         * 
-         * 256 = Presence
-         */
-        intents: RawIntents;
-        /**
-         * Whether the function requires premium hosting time
-         */
-        premium: boolean;
-        /**
-         * Deprecated key
-         * 
-         * *No longer is being used*
-         */
-        color: 0;
-    }
+	interface Response {
+		/**
+		 * The tag of the function
+		 */
+		tag: string;
+		/**
+		 * The description of the function
+		 */
+		shortDescription: string;
+		/**
+		 * The description of the function?
+		 *
+		 * *It was never used*
+		 */
+		longDescription: string;
+		/**
+		 * The arguments of the function
+		 */
+		arguments: Argument[] | null;
+		/**
+		 * The intents of the function
+		 *
+		 * 0 = None
+		 *
+		 * 2 = Members
+		 *
+		 * 256 = Presence
+		 */
+		intents: RawIntents;
+		/**
+		 * Whether the function requires premium hosting time
+		 */
+		premium: boolean;
+		/**
+		 * Deprecated key
+		 *
+		 * *No longer is being used*
+		 */
+		color: 0;
+	}
 
-    interface Arguments {
-        /**
-         * The name of the argument
-         */
-        name: string;
-        /**
-         * The description of the argument
-         */
-        description?: string;
-        /**
-         * The type of the argument
-         */
-        type: ArgumentType;
-        /**
-         * Whether the argument is required
-         */
-        required: boolean;
-        /**
-         * Whether the argument can be repeated
-         */
-        repeatable?: boolean;
-        /**
-         * Whether the argument can be empty
-         */
-        empty?: boolean;
-        /**
-         * The Enums of the argument.
-         */
-        enumData?: any;
-    }
+	interface Argument {
+		/**
+		 * The name of the argument
+		 */
+		name: string;
+		/**
+		 * The description of the argument
+		 */
+		description?: string;
+		/**
+		 * The type of the argument
+		 */
+		type: ArgumentType;
+		/**
+		 * Whether the argument is required
+		 */
+		required: boolean;
+		/**
+		 * Whether the argument can be repeated
+		 */
+		repeatable?: boolean;
+		/**
+		 * Whether the argument can be empty
+		 */
+		empty?: boolean;
+		/**
+		 * The Enums of the argument.
+		 */
+		enumData?: any;
+	}
 
-    type ArgumentType = (
-        'Bool' | 'URL | String' | 'String' | 'Enum' | 'Emoji' | 'Snowflake' | 'URL' | 'Integer' |
-        'Float | String | Integer' | 'HowMany' | 'Tuple' | 'Snowflake | String' | 'Permission' |
-        'Color' | 'Duration' | 'Integer | Float' | 'String | URL' | 'String | Snowflake' |
-        'Float | Bool | Integer | String' | 'Float | Integer | String' |
-        'String | Bool | Integer | Float' | 'HowMany | String' | 'Float | Integer' | 'Float'
-    );
+	type ArgumentType =
+		| "Bool"
+		| "URL | String"
+		| "String"
+		| "Enum"
+		| "Emoji"
+		| "Snowflake"
+		| "URL"
+		| "Integer"
+		| "Float | String | Integer"
+		| "HowMany"
+		| "Tuple"
+		| "Snowflake | String"
+		| "Permission"
+		| "Color"
+		| "Duration"
+		| "Integer | Float"
+		| "String | URL"
+		| "String | Snowflake"
+		| "Float | Bool | Integer | String"
+		| "Float | Integer | String"
+		| "String | Bool | Integer | Float"
+		| "HowMany | String"
+		| "Float | Integer"
+		| "Float";
 
-    namespace ArgumentEnums {
-        type AddButton = readonly ['primary', 'secondary', 'success', 'danger', 'link'];
-        type Modal = readonly ['short', 'paragraph'];
-        type Category = readonly ['count', 'name', 'id', 'mention'];
-        type Channel = readonly ['text', 'voice', 'category', 'stage', 'forum'];
-        type EditButton = readonly ['primary', 'secondary', 'success', 'danger', 'link'];
-        type Error = readonly ['row', 'column', 'command', 'source', 'message'];
-        type Cooldown = readonly ['normal', 'global', 'server'];
-        type EmbedData = readonly ['description', 'footer', 'color', 'image', 'timestamp', 'title'];
-        type InviteInfo = readonly ['uses', 'channel', 'creationDate', 'inviter', 'isTemporary'];
-        type LeaderboardType = readonly ['user', 'server', 'globalUser'];
-        type Sort = readonly ['desc', 'asc'];
-        type LeaderboardReturnType = readonly ['id', 'value'];
-        type MessageData = readonly ['content', 'authorID', 'username', 'avatar'];
-        type Timestamp = readonly ['ns', 'ms', 's'];
-        type MembersCount = readonly ['invisible', 'dnd', 'online', 'offline', 'idle'];
-        type Url = readonly ['decode', 'encode'];
-        type VariablesCount = readonly ['channel', 'user', 'server', 'globaluser'];
-    }
+	namespace ArgumentEnums {
+		type AddButton = readonly [
+			"primary",
+			"secondary",
+			"success",
+			"danger",
+			"link"
+		];
+		type Modal = readonly ["short", "paragraph"];
+		type Category = readonly ["count", "name", "id", "mention"];
+		type Channel = readonly ["text", "voice", "category", "stage", "forum"];
+		type EditButton = readonly [
+			"primary",
+			"secondary",
+			"success",
+			"danger",
+			"link"
+		];
+		type Error = readonly ["row", "column", "command", "source", "message"];
+		type Cooldown = readonly ["normal", "global", "server"];
+		type EmbedData = readonly [
+			"description",
+			"footer",
+			"color",
+			"image",
+			"timestamp",
+			"title"
+		];
+		type InviteInfo = readonly [
+			"uses",
+			"channel",
+			"creationDate",
+			"inviter",
+			"isTemporary"
+		];
+		type LeaderboardType = readonly ["user", "server", "globalUser"];
+		type Sort = readonly ["desc", "asc"];
+		type LeaderboardReturnType = readonly ["id", "value"];
+		type MessageData = readonly [
+			"content",
+			"authorID",
+			"username",
+			"avatar"
+		];
+		type Timestamp = readonly ["ns", "ms", "s"];
+		type MembersCount = readonly [
+			"invisible",
+			"dnd",
+			"online",
+			"offline",
+			"idle"
+		];
+		type Url = readonly ["decode", "encode"];
+		type VariablesCount = readonly [
+			"channel",
+			"user",
+			"server",
+			"globaluser"
+		];
+	}
 }
 
 export declare namespace Callback {
-    interface Info {
-        /**
-         * The name (tag-name) of the callback
-         */
-        name: string;
-        /**
-         * The description of the callback
-         */
-        description: string;
-        /**
-         * The arguments of the callback
-         */
-        args: Arguments[] | [];
-        /**
-         * The intents of the callback
-         */
-        intents: Intents;
-        /**
-         * Whether the callback requires premium hosting time
-         */
-        premium: boolean;
-    }
+	interface Info {
+		/**
+		 * The name (tag-name) of the callback
+		 */
+		name: string;
+		/**
+		 * The description of the callback
+		 */
+		description: string;
+		/**
+		 * The arguments of the callback
+		 */
+		args: Argument[] | [];
+		/**
+		 * The intents of the callback
+		 */
+		intents: Intents;
+		/**
+		 * Whether the callback requires premium hosting time
+		 */
+		premium: boolean;
+	}
 
-    interface Response {
-        /**
-         * The name of the callback
-         */
-        name: string;
-        /**
-         * The description of the callback
-         */
-        description: string;
-        /**
-         * The arguments of the callback
-         */
-        arguments: Arguments[] | null;
-        /**
-         * The intents of the callback
-         * 
-         * 0 = None
-         * 
-         * 2 = Members
-         * 
-         * 256 = Presence
-         */
-        intents: RawIntents;
-        /**
-         * Whether the callback requires premium hosting time
-         */
-        is_premium: boolean;
-    }
+	interface Response {
+		/**
+		 * The name of the callback
+		 */
+		name: string;
+		/**
+		 * The description of the callback
+		 */
+		description: string;
+		/**
+		 * The arguments of the callback
+		 */
+		arguments: Argument[] | null;
+		/**
+		 * The intents of the callback
+		 *
+		 * 0 = None
+		 *
+		 * 2 = Members
+		 *
+		 * 256 = Presence
+		 */
+		intents: RawIntents;
+		/**
+		 * Whether the callback requires premium hosting time
+		 */
+		is_premium: boolean;
+	}
 
-    interface Arguments {
-        /**
-         * The name of the argument
-         */
-        name: string;
-        /**
-         * The description of the argument
-         */
-        description: string;
-        /**
-         * The type of the argument
-         */
-        type: ArgumentType;
-        /**
-         * Whether the argument is required
-         */
-        required: boolean;
-    }
+	interface Argument {
+		/**
+		 * The name of the argument
+		 */
+		name: string;
+		/**
+		 * The description of the argument
+		 */
+		description: string;
+		/**
+		 * The type of the argument
+		 */
+		type: ArgumentType;
+		/**
+		 * Whether the argument is required
+		 */
+		required: boolean;
+	}
 
-    type ArgumentType = 'String' | 'Snowflake';
+	type ArgumentType = "String" | "Snowflake";
 }
 
-class Request {
-    public static async functions(params: {
-        endpoint: FunctionEndpoint.Info,
-        tag: string
-    }): Promise<Function.Response | undefined>;
-    public static async functions(params: {
-        endpoint: FunctionEndpoint.List
-    }): Promise<Function.Response[]>;
-    public static async functions(params: {
-        endpoint: FunctionEndpoint.TagList
-    }): Promise<string[]>;
+type PartialTag = string;
+type TagArray = string[];
+type WrapperTarget = "function" | "callback";
+type Endpoint = "info" | "list" | "tag-list";
 
-    public static async functions(
-        params:
-            | { endpoint: FunctionEndpoint.List | FunctionEndpoint.TagList }
-            | { endpoint: FunctionEndpoint.Info, tag: string }
-    ) {
-        switch (params.endpoint) {
-            case FunctionEndpoint.Info:
-                const tag = await findTag(Target.Functions, params.tag!);
-                if (!tag) return;
+export class Wrapper {
+	private target: WrapperTarget;
 
-                return <Function.Response | undefined> await (
-                    await centra(API + ENDPOINT_PATH.FUNCTION.INFO + tag).send()
-                ).json();
-            case FunctionEndpoint.List:
-                return <Function.Response[]> await (
-                    await centra(API + ENDPOINT_PATH.FUNCTION.LIST).send()
-                ).json();
-            case FunctionEndpoint.TagList:
-                return <string[]> await (
-                    await centra(API + ENDPOINT_PATH.FUNCTION.TAG_LIST).send()
-                ).json();
-        }
-    }
+	constructor(target: WrapperTarget) {
+		this.target = target;
+	}
 
-    public static async callbacks(params: {
-        endpoint: CallbackEndpoint.Info,
-        tag: string
-    }): Promise<Callback.Response | undefined>;
-    public static async callbacks(params: {
-        endpoint: CallbackEndpoint.List
-    }): Promise<Callback.Response[]>;
-    public static async callbacks(params: {
-        endpoint: CallbackEndpoint.TagList
-    }): Promise<string[]>;
+	private async findByPartialTag(
+		target: WrapperTarget,
+		tag: string
+	): Promise<string | undefined> {
+		let tagList: string[];
 
-    public static async callbacks(
-        params:
-            | { endpoint: CallbackEndpoint.List | CallbackEndpoint.TagList }
-            | { endpoint: CallbackEndpoint.Info, tag: string }
-    ) {
-        switch (params.endpoint) {
-            case CallbackEndpoint.Info:
-                const tag = await findTag(Target.Callbacks, params.tag!);
-                if (!tag) return;
+		switch (target) {
+			case "function":
+				tagList = await new Wrapper("function").fetch("tag-list");
+				break;
+			case "callback":
+				tagList = await new Wrapper("callback").fetch("tag-list");
+				break;
+		}
 
-                return <Callback.Response | undefined> await (
-                    await centra(API + ENDPOINT_PATH.CALLBACK.INFO + tag).send()
-                ).json();
-            case CallbackEndpoint.List:
-                return <Callback.Response[]> await (
-                    await centra(API + ENDPOINT_PATH.CALLBACK.LIST).send()
-                ).json();
-            case CallbackEndpoint.TagList:
-                return <string[]> await (
-                    await centra(API + ENDPOINT_PATH.CALLBACK.TAG_LIST).send()
-                ).json();
-        }
-    }
+		for (const t of tagList) {
+			if (t.includes(tag)) return t;
+		}
+	}
 
-    public static async nodes() {
-        return await (
-            await centra(NODES).send()
-        ).text();
-    }
-}
+	private buildInfo(
+		target: WrapperTarget,
+		response: Function.Response | Callback.Response
+	) {
+		switch (target) {
+			case "function":
+				const {
+					tag,
+					shortDescription,
+					premium,
+					intents: functionIntents,
+					arguments: functionArguments,
+				} = <Function.Response>response;
 
-export class Nodes {
-    /**
-     * 
-     * @returns An array containing info about nodes
-     */
-    public static async list(): Promise<Node.Info[]> {
-        const html = await Request.nodes();
-        const document = new JSDOM(html).window.document;
+				return <Function.Info>{
+					tag,
+					description: shortDescription,
+					args: functionArguments,
+					intents: HumanizeIntents(functionIntents),
+					premium,
+				};
+			case "callback":
+				const {
+					name,
+					description,
+					is_premium,
+					intents: callbackIntents,
+					arguments: callbackArguments,
+				} = <Callback.Response>response;
 
-        const [defaultTable, highPerfTable] = document.getElementsByClassName('uk-table');
+				return <Callback.Info>{
+					name,
+					description,
+					args: callbackArguments,
+					intents: HumanizeIntents(callbackIntents),
+					premium: is_premium,
+				};
+		}
+	}
 
-        if (!defaultTable)
-            throw new Error('Failed to parse the Default table, please try again later.');
-        if (!highPerfTable)
-            throw new Error('Failed to parse the High Perfomance table, please try again later.');
+	private async fetch(
+		endpoint: "info",
+		tag: string
+	): Promise<Function.Response | Callback.Response>;
+	private async fetch(
+		endpoint: "list"
+	): Promise<Function.Response[] | Callback.Response[]>;
+	private async fetch(endpoint: "tag-list"): Promise<TagArray>;
 
-        const [dtCaptionElement, _dtTHeadElement, dtTBodyElement] = defaultTable.children;
-        const [hptCaptionElement, _hptTHeadElement, hptTBodyElement] = highPerfTable.children;
+	private async fetch(endpoint: Endpoint, tag: string = "") {
+		switch (this.target) {
+			case "function":
+				switch (endpoint) {
+					case "info":
+						return await this.findByPartialTag(
+							"function",
+							tag
+						).then(
+							async (
+								completedTag
+							): Promise<Function.Response> => {
+								if (!completedTag)
+									throw new Error(
+										`Failed to find function by partial tag "${tag}": resulted in "${completedTag}"`
+									);
+								return await (
+									await centra(
+										Api +
+											EndpointPath.function.info +
+											completedTag
+									).send()
+								).json();
+							}
+						);
+					case "list":
+						return <Function.Response[]>(
+							await (
+								await centra(
+									Api + EndpointPath.function.list
+								).send()
+							).json()
+						);
+					case "tag-list":
+						return <TagArray>(
+							await (
+								await centra(
+									Api + EndpointPath.function.tagList
+								).send()
+							).json()
+						);
+				}
+			case "callback":
+				switch (endpoint) {
+					case "info":
+						return await this.findByPartialTag(
+							"callback",
+							tag
+						).then(
+							async (completedTag): Promise<Callback.Response> =>
+								await (
+									await centra(
+										Api +
+											EndpointPath.callback.info +
+											completedTag
+									).send()
+								).json()
+						);
+					case "list":
+						return <Callback.Response[]>(
+							await (
+								await centra(
+									Api + EndpointPath.callback.list
+								).send()
+							).json()
+						);
+					case "tag-list":
+						return <TagArray>(
+							await (
+								await centra(
+									Api + EndpointPath.callback.tagList
+								).send()
+							).json()
+						);
+				}
+			default:
+				throw new Error(
+					`Target "${this.target}" does not exist! Available targets: "function", "callback".`
+				);
+		}
+	}
 
-        const dtCaption = dtCaptionElement.textContent!;
-        const hptCaption = hptCaptionElement.textContent!;
+	/**
+	 *
+	 * Makes request to function-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 * @param tag A function tag, it can even be written partially
+	 */
+	public async function(
+		endpoint: "info",
+		tag: PartialTag
+	): Promise<Function.Info>;
+	/**
+	 *
+	 * Makes request to function-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 */
+	public async function(endpoint: "list"): Promise<Function.Info[]>;
+	/**
+	 *
+	 * Makes request to function-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 */
+	public async function(endpoint: "tag-list"): Promise<TagArray>;
 
-        const dtBody = [];
-        const hptBody = [];
+	public async function(endpoint: Endpoint, tag: PartialTag = "") {
+		if (this.target === "callback")
+			throw new Error(
+				`Cannot use "${this.function.name}" method when target is "${this.target}"!`
+			);
 
-        for (const element of dtTBodyElement.children)
-            dtBody.push( parseBody(element.children) );
-        for (const element of hptTBodyElement.children)
-            hptBody.push( parseBody(element.children) );
+		switch (endpoint) {
+			case "info":
+				return this.buildInfo(
+					this.target,
+					await this.fetch("info", tag)
+				);
+			case "list":
+				return await this.fetch("list").then((data) => {
+					const list: Function.Info[] = [];
 
-        return [
-            {
-                name: dtCaption,
-                stats: dtBody
-            },
-            {
-                name: hptCaption,
-                stats: hptBody
-            }
-        ];
-    }
-}
+					for (const response of data) {
+						list.push(
+							<Function.Info>this.buildInfo(this.target, response)
+						);
+					}
 
-export class Functions {
-    /**
-     * Get the information about the function
-     * 
-     * @param tag The tag of the function. The tag can be written partially (e.g `$addB`)
-     * @returns Information about the function or `undefined` if the function wasn't found
-     */
-    public static async info(tag: string): Promise<Function.Info | undefined> {
-        const data = await Request.functions({ endpoint: FunctionEndpoint.Info, tag });
-        if (!data) return;
+					return list;
+				});
+			case "tag-list":
+				return await this.fetch("tag-list");
+		}
+	}
 
-        return buildInfo({ target: Target.Functions, response: data});
-    }
+	/**
+	 *
+	 * Makes request to callback-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 * @param tag A function tag, it can even be written partially
+	 */
+	public async callback(
+		endpoint: "info",
+		tag: PartialTag
+	): Promise<Callback.Info>;
+	/**
+	 *
+	 * Makes request to callback-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 */
+	public async callback(endpoint: "list"): Promise<Callback.Info[]>;
+	/**
+	 *
+	 * Makes request to callback-related endpoints
+	 *
+	 * @param endpoint The endpoint to make the request to
+	 */
+	public async callback(endpoint: "tag-list"): Promise<TagArray>;
 
-    /**
-     * Get the information about all functions
-     * 
-     * @returns An array of objects containing information about all functions
-     */
-    public static async list(): Promise<Function.Info[]> {
-        const data = await Request.functions({ endpoint: FunctionEndpoint.List });
-        const functionList: Function.Info[] = [];
+	public async callback(endpoint: Endpoint, tag: PartialTag = "") {
+		if (this.target === "function")
+			throw new Error(
+				`Cannot use "${this.callback.name}" method when target is "${this.target}"!`
+			);
 
-        for (const f of data)
-            functionList.push(buildInfo({ target: Target.Functions, response: f }));
+		switch (endpoint) {
+			case "info":
+				return this.buildInfo(
+					this.target,
+					await this.fetch("info", tag)
+				);
+			case "list":
+				return await this.fetch("list").then((data) => {
+					const list: Callback.Info[] = [];
 
-        return functionList;
-    }
+					for (const response of data) {
+						list.push(
+							<Callback.Info>this.buildInfo(this.target, response)
+						);
+					}
 
-    /**
-     * Get the tags of all functions
-     * 
-     * @returns An array of strings containing the tags of all functions
-     */
-    public static async tagList(): Promise<string[]> {
-        return await Request.functions({ endpoint: FunctionEndpoint.TagList });
-    }
-}
-
-export class Callbacks {
-    /**
-     * Get the information about the callback
-     * 
-     * @param tag The tag of the callback. The tag can be written partially (e.g `$addB`)
-     * @returns Information about the callback or `undefined` if the callback wasn't found
-     */
-    public static async info(tag: string): Promise<Callback.Info | undefined> {
-        const data = await Request.callbacks({ endpoint: CallbackEndpoint.Info , tag });
-        if (!data) return;
-
-        return buildInfo({ target: Target.Callbacks, response: data });
-    }
-
-    /**
-     * Get the information about all callbacks
-     * 
-     * @returns An array of objects containing information about all callbacks
-     */
-    public static async list(): Promise<Callback.Info[]> {
-        const data = await Request.callbacks({ endpoint: CallbackEndpoint.List });
-        const callbackList: Callback.Info[] = [];
-
-        for (const c of data)
-            callbackList.push(buildInfo({ target: Target.Callbacks, response: c }));
-
-        return callbackList;
-    }
-
-    /**
-     * Get the tags of all callbacks
-     * 
-     * @returns An array of strings containing the tags of all callbacks
-     */
-    public static async tagList(): Promise<string[]> {
-        return await Request.callbacks({ endpoint: CallbackEndpoint.TagList });
-    }
+					return list;
+				});
+			case "tag-list":
+				return await this.fetch("tag-list");
+		}
+	}
 }

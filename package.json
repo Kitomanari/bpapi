@@ -1,30 +1,32 @@
 {
-  "name": "@synthexia/bpapi-wrapper",
-  "version": "4.0.1",
-  "description": "BPAPI Wrapper allows you to work with BDFD Public API more easier and pretty!",
-  "author": "Kitomanari",
-  "main": "./dist/index.js",
-  "typings": "./types/",
-  "repository": {
-    "url": "https://github.com/synthexia/bpapi-wrapper"
-  },
-  "scripts": {
-    "build": "tsc -p . && pnpm pack"
-  },
-  "keywords": [
-    "bds",
-    "bdscript",
-    "bdfd",
-    "bpapi"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "centra": "^2.6.0",
-    "jsdom": "^24.0.0"
-  },
-  "devDependencies": {
-    "@types/centra": "^2.2.3",
-    "@types/jsdom": "^21.1.6"
-  },
-  "packageManager": "pnpm@8.14.1"
+	"name": "@synthexia/bpapi-wrapper",
+	"version": "5.0.0",
+	"description": "BPAPI Wrapper allows you to work with BDFD Public API more easier and pretty!",
+	"author": {
+		"name": "Kitosight",
+		"url": "https://github.com/Kitosight"
+	},
+	"main": "./dist/index.js",
+	"typings": "./types/",
+	"repository": {
+		"url": "https://github.com/synthexia/bpapi-wrapper"
+	},
+	"scripts": {
+		"build": "tsc -p . && pnpm pack --pack-destination packs"
+	},
+	"keywords": [
+		"bds",
+		"bdscript",
+		"bdfd",
+		"bpapi"
+	],
+	"license": "MIT",
+	"dependencies": {
+		"centra": "^2.7.0"
+	},
+	"devDependencies": {
+		"@types/centra": "^2.2.3",
+		"@types/node": "^22.10.7"
+	},
+	"packageManager": "pnpm@8.15.9+sha512.499434c9d8fdd1a2794ebf4552b3b25c0a633abcee5bb15e7b5de90f32f47b513aca98cd5cfd001c31f0db454bc3804edccd578501e4ca293a6816166bbd9f81"
 }
